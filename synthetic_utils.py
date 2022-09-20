@@ -415,9 +415,6 @@ class perm_expert_6(object):
         return False, None
 
 def two_in_four(type='all'):
-    # good perm: [[0, 1, 2, 3], [2, 1, 3, 0], [3, 2, 1, 0], [2, 3, 1, 0], [2, 0, 3, 1], [2, 1, 0, 3]]
-    # bad perm: [[0, 1, 2, 3], [0, 2, 3, 1], [3, 2, 0, 1], [3, 0, 2, 1], [3, 0, 2, 1], [0, 2, 3, 1]]
-
     print('Perm type is {}'.format(type))
     if type == 'connection':
         ori_data = torch.Tensor([1, 1, 2, 2])

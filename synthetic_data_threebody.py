@@ -51,11 +51,6 @@ class three_body_dataset_creator(object):
         t_span = [0, 10]
         time_select = 50
 
-        """state = self.random_config(nu=orbit_noise)
-        orbit, settings = self.get_orbit(state, t_points=timesteps,
-        t_span=t_span, nbodies=3)  # orbit shape [2, 5, timesteps]
-        start_point = torch.randint(low=0, high=int(timesteps - time_select), size=(1,)).item()"""
-
         state = self.random_config(nu=orbit_noise)
         orbit, settings = self.get_orbit(state, t_points=timesteps, t_span=t_span, nbodies=3)
 

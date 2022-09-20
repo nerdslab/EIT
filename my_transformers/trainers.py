@@ -54,13 +54,6 @@ class MAE_learner(pl.LightningModule):
                                  }, step=self.global_step)
         return {'loss': loss}
 
-    #def validation_step(self, batch, batch_idx):
-    #    x, _ = batch
-    #    loss, _, _ = self.forward(x)
-
-    #   self.logger.log_metrics({'Loss/eval_loss': loss,
-    #                             }, step=self.global_step)
-
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.LR)

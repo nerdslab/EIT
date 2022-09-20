@@ -38,9 +38,6 @@ class two_body_dataset_creator(object):
         if save:
             np.savez(os.path.join(path, 'test8'), data=data)
 
-        #a_file = open(os.path.join(path, 'test2.pkl'), "wb")
-        #pickle.dump(data, a_file)
-        #a_file.close()
 
     def two_pair_setting_randomtime_diffmass(self, trials=500, timesteps=50,
                                              t_span=[0, 10], orbit_noise=5e-2, time_select=10):
@@ -112,62 +109,6 @@ class two_body_dataset_creator(object):
 
         return data
 
-    def three_pair_setting3(self, trials=500, timesteps=50, t_span=[0, 10], orbit_noise=5e-2):
-        data = []
-
-        for i in range(trials):
-            ratio_list = torch.rand(3) * 0.3 + 1.1
-            orbits = []
-            for ratio in ratio_list.tolist():
-                state = self.random_config(orbit_noise, weight_ratio=ratio)
-                orbit, settings = self.get_orbit(state, t_points=timesteps,
-                                                 t_span=t_span)  # orbit shape [2, 5, timesteps]
-
-                orbits.append(orbit)
-            orbits = np.concatenate(orbits, axis=0)  # [6, 5, timestamp]
-            data.append(orbits)
-
-        data = np.stack(data, axis=0)  # [trial, 6, 5, timestamp]
-
-        return data
-
-    def three_pair_setting2(self, trials=200, timesteps=50, t_span=[0, 10], orbit_noise=5e-2, id=20):
-        data = {}
-        for id_i in range(id):
-            ratio_list = torch.rand(3) * 0.3 + 1.1
-            data['data{}'.format(id_i)] = self.three_pair_i(ratio_list, trials, timesteps, t_span, orbit_noise)
-
-        return data
-
-    def three_pair_setting(self, trials=500, timesteps=50, t_span=[0, 10], orbit_noise=5e-2):
-        ratio_list1 = torch.rand(3) * 0.3 + 1.1
-        data1 = self.three_pair_i(ratio_list1, trials, timesteps, t_span, orbit_noise)
-
-        ratio_list2 = torch.rand(3) * 0.3 + 1.1 # 1.6 for balancing prob
-        data2 = self.three_pair_i(ratio_list2, trials, timesteps, t_span, orbit_noise)
-
-        return {'data1': data1,
-                'data2': data2}
-
-    def three_pair_i(self, ratio_list, trials=1000, timesteps=50, t_span=[0, 10], orbit_noise=5e-2):
-        """three pair setting considers 3 balanced, 2b+1unb, 2unb+1b, 3 unb cases"""
-
-        data = []
-
-        for i in range(trials):
-            orbits = []
-            for ratio in ratio_list.tolist():
-                state = self.random_config(orbit_noise, weight_ratio=ratio)
-                orbit, settings = self.get_orbit(state, t_points=timesteps, t_span=t_span)  # orbit shape [2, 5, timesteps]
-
-                orbits.append(orbit)
-            orbits = np.concatenate(orbits, axis=0)  # [6, 5, timestamp]
-            data.append(orbits)
-
-        data = np.stack(data, axis=0) # [trial, 6, 5, timestamp]
-
-        return data
-
     def random_config(self, orbit_noise=5e-2, min_radius=0.5, max_radius=1.5, weight_ratio=1, mass1=None, mass2=None):
         state = np.zeros((2, 5))
         if weight_ratio is not None:
@@ -220,18 +161,6 @@ class two_body_dataset_creator(object):
 
         start_point = torch.randint(low=0, high=int(timesteps - time_select), size=(1,)).item()
         select_orbit = orbit[:, :, start_point:int(start_point + time_select)]
-
-        """orbits = []
-            for pair in range(2):
-                mass1 = torch.rand(1) * 0.8 + 0.8  # range 0.8 -> 1.6
-                mass2 = torch.rand(1) * 0.8 + 0.8
-
-                state = self.random_config(orbit_noise, weight_ratio=None, mass1=mass1, mass2=mass2)
-                orbit, settings = self.get_orbit(state, t_points=timesteps,
-                                                 t_span=t_span)  # orbit shape [2, 5, timesteps]
-
-                start_point = torch.randint(low=0, high=int(timesteps-time_select), size=(1,)).item()
-                orbits.append(orbit[:, :, start_point:int(start_point+time_select)])"""
 
         print(orbit.shape)  # (2, 5, 1000) -- two body, 5 properties [mass, pos, vel], timesteps
 
@@ -304,4 +233,3 @@ class two_body_dataset_creator(object):
 CT = two_body_dataset_creator(save=False)
 for i in range(10):
     CT.get_one_visual(name='{}'.format(i))
-# CT.get_one_visual()  # (2, 5, 50)

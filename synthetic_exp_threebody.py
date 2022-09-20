@@ -6,14 +6,12 @@ import numpy as np
 import pickle
 
 import torch
-import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
 
 from neural_kits.utils import set_random_seeds
-from neural_kits.neural_models import Neural_ViT_T, Neural_ViT_S, Neural_ViT_Benchmark
 from neural_kits.neural_trainer import vit_neural_learner, vit_neural_learner_trans
 
 from synthetic_utils import perm_expert_6
@@ -316,16 +314,7 @@ def attention_check(CLS=10, label_type='connection'):
 
 
 
-
-
 if __name__ == '__main__':
     set_random_seeds(0)
-    # print(len(perm))
-    # main()
-    # attention()
-    # benchmark()
-    # main()
-    # attention_bm()
     app.run(run)
 
-    # attention_check()

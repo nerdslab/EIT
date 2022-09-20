@@ -23,64 +23,6 @@ from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 
 
-class Two_body_Dataset_old(Dataset):
-    """abandoned."""
-    # select data 7 for connection
-    # select data 8 for type
-    def __init__(self, path='datasets/synthetic_twobody/test8.npz', train_ratio=0.8, train=True, cls=8):
-        dat = np.load(path)
-        #dat = pickle.load(open(path, "rb"))
-        # dat['data1'], dat['data2'] with shape [trial, 6, 5, timestamp]
-
-        len_data = dat['data'].shape[0]
-        train_split = round(train_ratio*len_data)
-
-        self.data = []
-        self.label = []
-
-        self.perm = perm
-
-        if train:
-            for cls_i in range(cls):
-                self.data.append(torch.Tensor(dat['data'][:train_split, self.perm[cls_i], 1:3, :]))
-                self.label.append(cls_i * torch.ones(dat['data'][:train_split].shape[0],
-                                              dat['data'][:train_split].shape[-1]))
-
-        else:
-            for cls_i in range(cls):
-                self.data.append(torch.Tensor(dat['data'][train_split:, self.perm[cls_i], 1:3, :]))
-                self.label.append(cls_i * torch.ones(dat['data'][train_split:].shape[0],
-                                              dat['data'][train_split:].shape[-1]))
-
-        self.data = torch.cat(self.data)
-        self.label = (torch.cat(self.label)).long()
-
-    def multiple_pickle(self, train, cls, dat, train_split):
-        self.data = []
-        self.label = []
-        if train:
-            for cls_i in range(cls):
-                self.data.append(torch.Tensor(dat['data{}'.format(cls_i)][:train_split, :, 1:3, :]))
-                self.label.append(cls_i * torch.ones(dat['data{}'.format(cls_i)][:train_split].shape[0],
-                                                     dat['data{}'.format(cls_i)][:train_split].shape[-1]))
-
-        else:
-            for cls_i in range(cls):
-                self.data.append(torch.Tensor(dat['data{}'.format(cls_i)][train_split:, :, 1:3, :]))
-                self.label.append(cls_i * torch.ones(dat['data{}'.format(cls_i)][train_split:].shape[0],
-                                                     dat['data{}'.format(cls_i)][train_split:].shape[-1]))
-
-        self.data = torch.cat(self.data)
-        self.label = (torch.cat(self.label)).long()
-
-
-    def __getitem__(self, index):
-        # data with shape [trial, 6, 2, timestamp], label is [trial, timestamp]
-        return self.data[index], self.label[index]
-
-    def __len__(self):
-        return self.data.shape[0]
-
 class Two_body_Dataset_whole(Dataset):
     def __init__(self, path='datasets/synthetic_twobody/test8.npz',
                  train_ratio=0.8,
@@ -148,6 +90,7 @@ class Synthetic_ViT_T(Neural_ViT_T):
         small_trans_x = self.mlp_head_bottolneck(trans_x)
         return trans_x, small_trans_x
 
+
 class Synthetic_ViT_S(Neural_ViT_S):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -168,15 +111,8 @@ class Synthetic_ViT_S(Neural_ViT_S):
         x = self.dropout(x)
         x, weights = self.S_transformer(x)  # [(b t) n ed+td]
 
-        # attn = torch.matmul(x, x.transpose(-1, -2)) * self.scale
-        # attn = self.attend(attn)
-
-        # print(x.shape)  # 3200, 4 (body), 16 (attention?)
-
         store_x = x.clone().detach()
-
         x = self.bottolneck(x)  # [(b t) n 1]
-
         store_btnk = x.clone().detach()
 
         x = rearrange(x, 'b n d -> b (n d)')  # 4*4? --> matrix of 16
@@ -188,6 +124,7 @@ class Synthetic_ViT_S(Neural_ViT_S):
                    "store_x": store_x,
                    "bottleneck_x": store_btnk,
                    }
+
 
 class Synthetic_NDT(Neural_ViT_Benchmark):
     def __init__(self, time=10, **kwargs):
@@ -289,8 +226,6 @@ def benchmark(label_type='connection'):
     t_epoch = 500
     LR = 5e-4  # needs higher than our model to learn better
 
-    # dataset_train = Two_body_Dataset(train=True)
-    # dataset_test = Two_body_Dataset(train=False)
     dataset_train = Two_body_Dataset_whole(train=True, label_type=label_type)
     dataset_test = Two_body_Dataset_whole(train=False, label_type=label_type)
 
@@ -378,8 +313,6 @@ def attention(label_type):
         ff=False,
     ).cuda()
 
-    # s.load_state_dict(torch.load('ckpt_neural/SYN_twobody/vit_epoch499.pt'))
-    # s.load_state_dict(torch.load('ckpt_syn_bm/SYN_twobody/vit_epoch399.pt'))
     s.load_state_dict(torch.load('ckpt_syn_bm/SYN_twobody{}/vit_epoch299.pt'.format(label_type)))
 
     T_net = s.MT
@@ -389,9 +322,6 @@ def attention(label_type):
     with torch.no_grad():
 
         cls, weights = s(x.cuda())
-        # cls = rearrange(cls, '(b t) d -> b t d', b=BS)
-        # print(label[:, 0], cls[:, 0, :]) # santity check of labels
-
         label = rearrange(label, 'b t -> (b t)')
         print(dataset_train.perm[1])
 
@@ -419,9 +349,6 @@ def attention(label_type):
             joint_attentions[n] = torch.matmul(aug_att_mat[n], joint_attentions[n - 1])
 
         v = joint_attentions[-1]
-        # print(v, '\n', attns[0], '\n', attns[1])
-        # plt.imshow(v)
-        # plt.show()
 
         fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(8, 4))
 
@@ -471,6 +398,7 @@ def attention(label_type):
         plt.legend()
         plt.show()
         #plt.savefig('2body-both-latent-0516.eps')
+
 
 def visualize_OT(label_type):
     BS = 512
@@ -537,7 +465,7 @@ def visualize_OT(label_type):
         latents_af = latents_af['store_x']
 
         print(latents_bf.shape, label.shape, latents_af.shape) # torch.Size([4000, 4, 16]), torch.Size([4000])
-        from test_distance_funcs import compute_OT
+        from ot_distance_funcs import compute_OT
 
         fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(8, 4))
 
@@ -556,294 +484,6 @@ def visualize_OT(label_type):
         #plt.show()
         plt.savefig('2body-distance-coolwarm.eps')
 
-        #matrix_af = torch.Tensor(compute_OT(latents_af.cpu().detach(), latents_af.cpu().detach()))
-        #img = ax[1].imshow(-matrix_af, cmap='coolwarm', vmin=-30, vmax=0)
-        #cbar = fig.colorbar(img, ax=ax)
-        #plt.show()
-
-
-
-
-def attention_bm():
-    BS = 64
-
-    dataset_train = Two_body_Dataset(train=True)
-    dataset_test = Two_body_Dataset(train=False)
-
-    loader_train = DataLoader(dataset_train, batch_size=BS, shuffle=True)
-    loader_test = DataLoader(dataset_test, batch_size=BS)
-
-    x, label = next(iter(loader_train))
-    print(x.shape, label.shape)
-
-    s = Synthetic_NDT(
-        num_classes=CLS,
-        depth=2,
-        heads=6,
-        neuron=x.shape[1],
-    ).cuda()
-
-    s.load_state_dict(torch.load('ckpt_syn_bm/SYN_twobody_bm/vit_epoch299.pt'))
-
-    cls, weights = s(x.cuda())
-    cls = rearrange(cls, '(b t) d -> b t d', b=BS)
-    # print(label[:, 0], cls[:, 0, :]) # santity check of labels
-    # print(label.shape, cls.shape) # torch.Size([64, 50]) torch.Size([64, 50, 6])
-
-    #label = rearrange(label, 'b t -> (b t)')
-    label = label[:, 0]
-
-    print(dataset_train.perm[1])
-
-    label0_mask = label == 1
-
-    print(len(weights["weights"]), weights["weights"][0].shape) # 2 layers, with 3200 6 6 6
-
-    attns = torch.mean(torch.stack(weights["weights"], dim=1)[label0_mask], dim=0).detach().cpu()  # 2, 6, 6, 6
-    attns = torch.mean(attns, dim=1)  # Average the weights across all heads. [2 6 6]]
-
-    # To account for residual connections, we add an identity matrix to the
-    # attention matrix and re-normalize the weights.
-    residual_att = torch.eye(attns.size(1))
-    aug_att_mat = attns + residual_att
-    aug_att_mat = aug_att_mat / aug_att_mat.sum(dim=-1).unsqueeze(-1)
-    # aug_att_mat = attns
-
-    # Recursively multiply the weight matrices
-    joint_attentions = torch.zeros(aug_att_mat.size())
-    joint_attentions[0] = aug_att_mat[0]
-    for n in range(1, aug_att_mat.size(0)):
-        joint_attentions[n] = torch.matmul(aug_att_mat[n], joint_attentions[n - 1])
-
-    v = joint_attentions[-1]
-    # v[0, 0], v[1, 1], v[2, 2], v[3, 3], v[4, 4], v[5, 5] = 0.05, 0.05, 0.05, 0.05, 0.05, 0.05
-
-    for i in range(50):
-        v[i, i] = 0.
-
-    print(v)
-
-    plt.imshow(v)
-    plt.show()
-
-
-def train_type_test_connection_init(train=True):
-    BS = 64
-    neuron_dim = 16
-    t_epoch = 200
-    LR = 1e-4
-
-    if train:
-        dataset_train = Two_body_Dataset_whole(train=True, label_type='connection')
-        dataset_test = Two_body_Dataset_whole(train=False, label_type='connection')
-
-        loader_train = DataLoader(dataset_train, batch_size=BS, shuffle=True)
-        loader_test = DataLoader(dataset_test, batch_size=BS)
-
-        x, label = next(iter(loader_train))
-        print(x.shape, label.shape)
-
-        v = Synthetic_ViT_T(
-            num_classes=CLS,
-            single_dim=neuron_dim,
-            depth=1,
-            heads=6,
-            neuron=x.shape[1],
-        ).cuda()
-        # v.load_state_dict(torch.load('ckpt_neural/VIT_Tmihi1-bm/vit_epoch199.pt'))
-
-        s = Synthetic_ViT_S(
-            MT=v,
-            neuron=x.shape[1],
-            num_classes=CLS,
-            single_dim=neuron_dim,
-            embed_dim=1,  # meaningless, placeholder
-            depth=1,
-            heads=6,
-            offset=True,
-            ff=False,
-        ).cuda()
-
-        # progress recording
-        TB_LOG_NAME = "SYN_twobody"
-        if not os.path.exists("ckpt_syn_ssl/{}".format(TB_LOG_NAME)):
-            os.makedirs("ckpt_syn_ssl/{}".format(TB_LOG_NAME))
-        logger = TensorBoardLogger("runs_neural", name=TB_LOG_NAME)
-
-        # training
-        augmentor = None
-
-        add = {}
-        add['train_loader'] = loader_train
-        add['test_loader'] = loader_test
-        add['save_dict'] = 'ckpt_syn_ssl'
-
-        learner = vit_neural_learner(
-            vit=s,
-            augmentor=augmentor,
-            LR=LR,  # rotation learning rate, 0.001 works better than 0.0001 on MSE loss
-            TB_LOG_NAME=TB_LOG_NAME,
-            SAVE=50,
-            add=add,
-            reshape_label=True,
-        )
-
-        # change gpus and distributed backend if you want to just use 1 gpu
-        trainer = pl.Trainer(
-            gpus=1,
-            max_epochs=t_epoch,
-            accumulate_grad_batches=1,
-            # distributed_backend="ddp",
-            logger=logger,
-        )
-
-        trainer.fit(learner, loader_train)
-
-    else:
-        dataset_train = Two_body_Dataset_whole(train=True, label_type='connection')
-        dataset_test = Two_body_Dataset_whole(train=False, label_type='connection')
-
-        loader_train = DataLoader(dataset_train, batch_size=BS, shuffle=True)
-        loader_test = DataLoader(dataset_test, batch_size=BS)
-
-        x, label = next(iter(loader_train))
-        print(x.shape, label.shape)
-
-        v = Synthetic_ViT_T(
-            num_classes=CLS, single_dim=neuron_dim,
-            depth=1, heads=6, neuron=x.shape[1],
-        ).cuda()
-        # v.load_state_dict(torch.load('ckpt_neural/VIT_Tmihi1-bm/vit_epoch199.pt'))
-
-        s = Synthetic_ViT_S(
-            MT=v,
-            neuron=x.shape[1],
-            num_classes=CLS,
-            single_dim=neuron_dim,
-            embed_dim=1,  # meaningless, placeholder
-            depth=1, heads=6,
-            offset=True, ff=False,
-        ).cuda()
-
-        s.load_state_dict(torch.load('ckpt_syn_ssl/SYN_twobody/vit_epoch199.pt'))
-
-        TB_LOG_NAME = "test"
-        if not os.path.exists("ckpt_syn_ssl/{}".format(TB_LOG_NAME)):
-            os.makedirs("ckpt_syn_ssl/{}".format(TB_LOG_NAME))
-        logger = TensorBoardLogger("runs_neural", name=TB_LOG_NAME)
-
-        T_net = s.MT
-        s.eval()
-        T_net.eval()
-
-        MLP = nn.Linear(4*16, 6).cuda()
-        MLP_optim = torch.optim.Adam(MLP.parameters(), lr=1e-4)
-        crit = torch.nn.CrossEntropyLoss()
-        progress_bar = tqdm(range(400), position=0, leave=True)
-
-
-        def eval_step(s, MLP, test_loader):
-            running_eval_loss = 0.0
-            MLP.eval()
-            with torch.no_grad():
-                right, total = [], []
-                for x, label in test_loader:
-                    # print(x.shape, label.shape)
-                    x, label = x.cuda(), label.cuda()
-                    _, latents = s(x)
-                    latents = latents['trans_x']
-                    latents = rearrange(latents, 'b n d -> b (n d)')
-
-                    preds = MLP(latents)
-                    label = rearrange(label, 'b t -> (b t)')
-
-                    loss = crit(preds, label)
-                    running_eval_loss += loss
-
-                    _, pred_class = torch.max(preds, 1)
-                    right.append((pred_class == label).sum().item())
-                    total.append(label.size(0))
-            MLP.train()
-            return running_eval_loss, sum(right) / sum(total)
-
-
-        for epoch in progress_bar:
-            right = []
-            total = []
-            for x, label in loader_train:
-                MLP.train()
-                MLP_optim.zero_grad()
-                x, label = x.cuda(), label.cuda()
-                # x = augmentor.augment(x)
-                with torch.no_grad():
-                    _, latents = s(x)
-                    # print(latents.shape) torch.Size([15, 8, 2560])
-                latents = latents['trans_x']
-                latents = rearrange(latents, 'b n d -> b (n d)')
-
-                preds = MLP(latents)
-                label = rearrange(label, 'b t -> (b t)')
-                loss = crit(preds, label)
-
-                _, pred_class = torch.max(preds, 1)
-                right.append((pred_class == label).sum().item())
-                total.append(label.size(0))
-
-                loss.backward()
-                MLP_optim.step()
-
-            progress_bar.set_description('Loss/train_clf: {}'.format(sum(right) / sum(total)))
-            logger.log_metrics({'Loss/train_clf': sum(right) / sum(total)}, step=epoch)
-
-            running_eval_loss, eval_clf = eval_step(s, MLP, loader_test)
-            logger.log_metrics({'Loss/eval_clf': eval_clf}, step=epoch)
-            logger.log_metrics({'Loss/running_eval_loss': running_eval_loss}, step=epoch)
-
-
-def train_type_test_connection():
-    BS = 64
-    neuron_dim = 16
-
-    dataset_train = Two_body_Dataset(train=True)
-    dataset_test = Two_body_Dataset(train=False)
-
-    loader_train = DataLoader(dataset_train, batch_size=BS, shuffle=True)
-    loader_test = DataLoader(dataset_test, batch_size=BS)
-
-    x, label = next(iter(loader_train))
-    print(x.shape, label.shape)
-
-    v = Synthetic_ViT_T(
-        num_classes=CLS,
-        single_dim=neuron_dim,
-        depth=1,
-        heads=6,
-        neuron=x.shape[1],
-    ).cuda()
-    # v.load_state_dict(torch.load('ckpt_neural/VIT_Tmihi1-bm/vit_epoch199.pt'))
-
-    s = Synthetic_ViT_S(
-        MT=v,
-        neuron=x.shape[1],
-        num_classes=CLS,
-        single_dim=neuron_dim,
-        embed_dim=1,  # meaningless, placeholder
-        depth=1,
-        heads=6,
-        offset=True,
-        ff=False,
-    ).cuda()
-
-    # s.load_state_dict(torch.load('ckpt_neural/SYN_twobody/vit_epoch499.pt'))
-    s.load_state_dict(torch.load('ckpt_syn_bm/SYN_twobody/vit_epoch499.pt'))
-
-    T_net = s.MT
-    s.eval()
-    T_net.eval()
-
-    MLP = nn.Linear()
-
-
 
 if __name__ == '__main__':
 
@@ -855,24 +495,10 @@ if __name__ == '__main__':
                  'both': 12,
                  }
 
-
-    #for key in ['connection', 'type', 'both']:
-    #    CLS = exp_types[key]
-
-    #    main(key)
-    #    benchmark(key)
-
     key = 'both'
 
     CLS = exp_types[key]
 
     #attention(key)
     visualize_OT(key)
-
-    # main()
-    # attention(key)
-    # benchmark()
-    # attention_bm()
-
-    # train_type_test_connection_init()
 

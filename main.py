@@ -902,7 +902,7 @@ def distance(args, train_A_loader, test_A_loader, train_B_loader, test_B_loader)
 
     # compute distance within neurons in A as well as neurons in B
 
-    from test_distance_funcs import MMD_loss
+    from ot_distance_funcs import MMD_loss
     from tqdm import tqdm
     from einops import rearrange
 
@@ -1544,4 +1544,3 @@ if __name__ == "__main__":
     print(f'PyTorch version: {torch.__version__}')
 
     app.run(run)
-    # 80 turns out to be better than 120 and 40
