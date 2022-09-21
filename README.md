@@ -5,14 +5,14 @@ representations of both individual and collective dynamics with transformers](ht
 
 ## Instructions
 
-##### Synthetic experiments
+#### Synthetic experiments
 
 Use [synthetic_data_threebody.py](https://github.com/nerdslab/EIT/blob/main/synthetic_data_threebody.py) or 
 [synthetic_data_twobody.py](https://github.com/nerdslab/EIT/blob/main/synthetic_data_twobody.py)
 to generate synthetic data, and then use the corresponding synthetic_exp_EXP.py to run experiments.
 The models are defined in [synthetic_exp_twobody.py](https://github.com/nerdslab/EIT/blob/main/synthetic_exp_twobody.py).
 
-##### Neural activity experiments
+#### Neural activity experiments
 
 The modified transformer basic operation sets are inside the **my_transformers** folder. 
 
@@ -22,8 +22,8 @@ The scripts are inside [main.py](https://github.com/nerdslab/EIT/blob/main/main.
 where the flag *MAEorVIT* determines the experiment type. 
 This codebase provides:
 
-1. Training EIT,
-2. Training individual module of EIT,
+1. The training of EIT,
+2. The training of the individual module of EIT,
 3. Transfer pre-trained EIT across different animals,
 4. Transfer pre-trained EIT across different targets,
 5. Transfer pre-trained EIT across different timepoints,
