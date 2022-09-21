@@ -46,19 +46,20 @@
             <!--Start Intro-->
             <div class="flex-row">
                 <div class="flex-item flex-column">
-                    <h2 class="add-top-margin">Welcome to EIT!</h2>
+                    <h2 class="add-top-margin">Welcome to EIT! (NeurIPS 2022)</h2>
                     <p class="text add-top-margin">
                         This webpage is still in progress. The information may not be accurate.
                         <br>
                         The paper preprint can be found <a target="https://arxiv.org/pdf/2206.06131.pdf" href="https://arxiv.org/pdf/2206.06131.pdf">here</a>.
                         If you use our code, please cite our paper as below.
                         <br>
-                        [cite] Ran Liu, Mehdi Azabou, Max Dabagia, Jingyun Xiao, and Eva L. Dyer. 
+                        <br>
+                        [<b>cite</b>] Ran Liu, Mehdi Azabou, Max Dabagia, Jingyun Xiao, and Eva L. Dyer. 
                         "Seeing the forest and the tree: Building representations of both individual and collective dynamics with transformers." 
                         Advances in Neural Information Processing Systems 35 (2022).
                     </p>
-
-                    <h2 class="add-top-margin">Methods</h2>
+                    
+                    <h2 class="add-top-margin">Abstract</h2>
                     <hr>
                     <p class="text add-top-margin">
                         Complex systems (such as the brain) contain multiple individual elements (e.g. neurons) that interact
@@ -70,26 +71,25 @@
                         A natural way to model the activity of a system is to build a collective or <em>population-level view</em>,
                         where we consider individuals (or channels) jointly to determine the dynamics of the population. 
                         However, studying systems from this population-level perspective might cause the model to lose sight of the 
-                        contributions of different individuals’ dynamics to the final prediction or inference. 
-                        To address this issue, EIT (Embedded Interaction Transformer) presents a new framework for modeling time-varying observations 
+                        contributions of different individuals’ dynamics to the final prediction or inference.
+                    </p>
+
+                    <h2 class="add-top-margin">Methods</h2>
+                    <hr>
+                    <p class="text add-top-margin">
+                        EIT (Embedded Interaction Transformer) presents a new framework for modeling time-varying observations 
                         of a system by using dynamic embeddings of individual channels to construct a population-level view.
                     </p>
                 </div>
             </div>
             <div class="flex-row">
                 <div class="flex-item flex-column">
-                    <a class="image center adaptive-image" style="background-image: url('img/overview.png.jpg'); width: 100%; max-width: 1200px; min-height: 200px;" href="img/overview_swapVAE.jpg" target="_blank"></a>
+                    <a class="image center adaptive-image" style="background-image: url('img/overview.png'); width: 100%; max-width: 1200px; min-height: 200px;" href="img/overview_swapVAE.jpg" target="_blank"></a>
                     <p class="text text-center graph-title">
                         The overview image of EIT.
                     </p>
                     <p class="text">
                         <!--<img class="image image-wrap-text max-width-550" src="img/Fig1_overview.png">-->
-                        <!--We trained a variational autoencoder (VAE) on a collection of
-                        <a target="_blank" href="https://connectivity.brain-map.org/">auto-fluorescence images</a>
-                        from over 1,700 mouse brains at 25 micron resolution. To then tap into the learned factors and
-                        validate the model's expressiveness, we developed a novel bi-directional technique to interpret
-                        the latent space--by making structured perturbations to both, the high-dimensional inputs of
-                        the network, as well as the low-dimensional latent variables in its bottleneck.-->
                         EIT decomposes multi-channel time-series by first learning rich features from individual time-series before 
                         incorporating information and learned interactions across different individuals in the population.
                         One critical benefit of our model is <em>spatial/individual separability</em>: it builds a population-level 
@@ -97,24 +97,32 @@
                         In domain generalization tasks, this means a trained model can be tested with permuted channels or entirely
                         different number of channels.
                     </p>
+                    
+                    <h2 class="add-top-margin">Contributions</h2>
+                    <hr>
+                    <p class="text add-top-margin">
+                        Our contributions are as follows:
+                        <ul>
+                            <li>We proposed a novel framework that considers individual dynamics before collective dynamics, and realized 
+                                it with a multi-stage transformer <b>EIT</b>. EIT learns both population representation and individual representation 
+                                through decoupling the dynamics of individuals and their interactions in multi-variate time-series. </li>
+                            <li>We introduced methods for generalization across datasets of different input size (number of channels) and ordering. 
+                                We further proposed to measure the alignments of time-series in different datasets through the Wasserstein divergence. </li>
+                            <li>We applied EIT to both many-body systems and neural systems recordings. After demonstrating our model’s robust 
+                                decoding performance, we validated its ability to transfer individual dynamics by performing domain generalization 
+                                across different populations of neurons and finding neuron alignments. </li>
+                        </ul>
+                    </p>
 
                 </div>
             </div>
             <!--End Intro-->
+            
+            
 
             <!--Start Text Only-->
             <div class="flex-row">
                 <div class="flex-item flex-column">
-                    <!--
-                    <h2 class="add-top-margin">Team</h2>
-                    <hr>
-                    <p class="text">
-                        Our paper use a beta-VAE and a bi-directional technique to model brain variablity.
-                    </p>
-                    <p class="text">
-                        Methods including ...
-                    </p>
-                    -->
                     <h2 class="add-top-margin">Team</h2>
                     <hr>
                     <ol class="publication">
