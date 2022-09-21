@@ -14,8 +14,7 @@ import torch.nn as nn
 from my_transformers.transforms import *
 
 from neural_kits.neural_models import Neural_ViT_T, Neural_ViT_S, Neural_ViT_Benchmark
-from neural_kits.neural_trainer import vit_neural_learner, \
-    vit_neural_learner_dirc, ndt_ssl_neural_learner
+from neural_kits.neural_trainer import vit_neural_learner, vit_neural_learner_dirc, ndt_ssl_neural_learner
 from neural_kits.neural_tasks import transfer_mlp
 from neural_kits.utils import set_random_seeds, get_animal_data
 

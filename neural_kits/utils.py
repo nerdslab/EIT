@@ -120,7 +120,6 @@ class get_animal_data(object):
 
         return train_loader, test_loader
 
-
     def single_animal_direction_loader(self, animal, day, train_dir, test_dir):
         train_set, test_set = self.single_animal_dataset(animal, day)
 
@@ -161,38 +160,6 @@ class get_animal_data(object):
         #test_loader_trainsplit = DataLoader(test_dirc_set_trainsplit, batch_size=self.batch_size*2// self.time_select)
         #test_loader_testsplit = DataLoader(test_dirc_set_testsplit, batch_size=self.batch_size*2// self.time_select)
         test_loader = DataLoader(test_dirc_set, batch_size=self.batch_size*2//self.time_select)
-
-        return train_loader, test_loader
-
-    def multiple_animal_loader(self, animals, days):
-        assert len(animals) == len(days)
-
-        train_sets = []
-        test_sets = []
-        for i in range(len(animals)):
-            train_set, test_set = self.single_animal_dataset(animals[i], days[i])
-            train_sets.append(train_set)
-            test_sets.append(test_set)
-
-        TYPE = 'cat'
-        if TYPE == 'list':
-            train_multiset = multiple_datasets_list(train_sets)
-            test_multiset = multiple_datasets_list(test_sets)
-
-            train_loader = DataLoader(train_multiset, batch_size=self.batch_size//self.time_select,
-                                      shuffle=True, collate_fn=self.list_collate)
-            test_loader = DataLoader(test_multiset, batch_size=self.batch_size//self.time_select,
-                                     collate_fn=self.list_collate)
-        elif TYPE == 'cat':
-            """basically, it returns a tuple with 4 animals
-            where data[0] gives data, label = data[0] for animal 1"""
-            train_multiset = multiple_datasets_cat(train_sets)
-            test_multiset = multiple_datasets_cat(test_sets)
-
-            train_loader = DataLoader(train_multiset, batch_size=self.batch_size//(self.time_select*4), shuffle=True)
-            test_loader = DataLoader(test_multiset, batch_size=self.batch_size//(self.time_select*4))
-        else:
-            raise NotImplementedError("a better idea??")
 
         return train_loader, test_loader
 

@@ -117,9 +117,6 @@ class direction_dataset(Dataset):
         dir_mask = self.label[:, 0]
         dir_mask_posi = [i for i in range(dir_mask.shape[0]) if (dir_mask[i] in select_dir)]
 
-        #print(self.data.shape)
-        #print(dir_mask_posi)
-
         self.data = self.data[dir_mask_posi]
         self.label = self.label[dir_mask_posi]
 
@@ -159,8 +156,6 @@ class time_dataset(Dataset):
         else:
             self.data = self.data[:, 4:, :]
             self.label = self.label[:, 4:]
-
-        # print(self.data.shape)
 
         # set them limited here
         limited = True

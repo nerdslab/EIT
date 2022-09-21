@@ -91,7 +91,6 @@ class Neural_ViT_T(nn.Module):
         trans_x = rearrange(trans_x, '(b n) t d -> b n t d', b=b)  # [batch, neuron, (time, dim)]
         return rearrange(trans_x, 'b n t d -> (b t) n d')
 
-
     def forward(self, img, head=None, test=False):
         if test is False:
             if head is None:
@@ -319,145 +318,6 @@ class Neural_ViT_S(nn.Module):
             return self.supervised_forward(img)
 
 
-class Neural_ViT_S_SSL(nn.Module):
-    """takes a T_trans and do connectivity learning"""
-    def __init__(self,
-                 neuron,
-                 num_classes,
-                 single_dim,
-                 embed_dim,
-                 depth,
-                 heads,
-                 mlp_expend=1,
-                 dim_head=64,
-                 dropout=0.,
-                 neuron_dropout=0.,
-                 pool='cls',
-                 type='cat',
-                 offset=False,
-                 ff=True,
-                 ):
-        super().__init__()
-        self.bottelneck_dim = 1
-        print("The REAL SSL S_transformer")
-        self.mask_token = nn.Parameter(torch.randn(single_dim))
-
-        assert pool in {'cls', 'mean'}, 'pool type must be either cls (cls token) or mean (mean pooling)'
-
-        self.neuron_embed = nn.Parameter(torch.randn(1, neuron, single_dim))  # based on total amount of neuron
-        self.dropout = nn.Dropout(neuron_dropout)
-        self.S_transformer = Transformer(single_dim, depth, heads, dim_head,
-                                         mlp_expend*single_dim, dropout,
-                                         offset=offset, ff=ff)
-
-        self.bottolneck = nn.Sequential(nn.Linear(single_dim, self.bottelneck_dim))
-        self.reverse_bottolneck = nn.Sequential(nn.Linear(self.bottelneck_dim, single_dim))
-        self.mlp_head = nn.Sequential(
-            nn.LayerNorm(neuron*self.bottelneck_dim),
-            nn.Dropout(neuron_dropout),
-            nn.Linear(neuron*self.bottelneck_dim, num_classes)
-        )
-
-
-        self.masking_ratio = 0.5
-
-    def supervised_forward(self, trans_x):
-        # b, t, n = img.shape
-        b, n, t, d = trans_x.shape
-
-        trans_x = rearrange(trans_x, 'b n t d -> (b t) n d')
-        embed_x = repeat(self.neuron_embed, '() n ed -> b n ed', b=b*t)  # [(b t) n ed]
-
-        x = trans_x + embed_x
-        x = self.dropout(x)
-        x, weights = self.S_transformer(x)  # [(b t) n ed+td]
-
-        x = self.bottolneck(x)  # [(b t) n 2]
-        x = rearrange(x, 'b n d -> b (n d)')
-        # x = self.mlp_head(x)
-
-        return x, {"weights": weights}
-
-    def ssl_forward(self, trans_x, trans_small_x):
-        trans_x = rearrange(trans_x, 'b n t d -> (b t) n d')
-        trans_small_x = rearrange(trans_small_x, 'b n t d -> (b t) n d')
-
-        bt, n, d = trans_x.shape
-        device = trans_x.device
-
-        # create masked_x and unmasked_x
-        num_masked = int(self.masking_ratio * n)
-        rand_indices = torch.rand(bt, n, device=device).argsort(dim=-1)
-        masked_indices, unmasked_indices = rand_indices[:, :num_masked], rand_indices[:, num_masked:]
-
-        batch_range = torch.arange(bt, device=device)[:, None]
-        unmasked_x = trans_x[batch_range, unmasked_indices]
-        masked_x = trans_x[batch_range, masked_indices]
-        masked_small_x = trans_small_x[batch_range, masked_indices]
-
-        # add unmask_x and masked_tokens with embeddings
-        embed_x = repeat(self.neuron_embed, '() n ed -> b n ed', b=bt)
-        unmasked_embed_x = embed_x[batch_range, unmasked_indices]
-        masked_embed_x = embed_x[batch_range, masked_indices]
-
-        masked_tokens = repeat(self.mask_token, 'd -> b n d', b=bt, n=num_masked)
-        masked_tokens = masked_tokens + masked_embed_x
-        unmasked_x = unmasked_x + unmasked_embed_x
-
-        tokens = torch.cat((masked_tokens, unmasked_x), dim=1)
-        x, weights = self.S_transformer(tokens)
-
-        pred_masked_values = x[:, :num_masked]
-        pred_masked_values = self.bottolneck(pred_masked_values)
-        # pred_masked_values = self.reverse_bottolneck(pred_masked_values)
-
-        # recon_loss = F.mse_loss(pred_masked_values, masked_small_x)
-        recon_loss = F.l1_loss(pred_masked_values, masked_small_x)
-        # print(recon_loss, pred_masked_values.shape, masked_x.shape)
-        return recon_loss
-
-
-    def forward(self, trans_x, small_trans_x, ssl):
-        """directly input trans_x, small_trans_x = self.MT.get_latent_t(img)"""
-        if ssl == True:
-            return self.ssl_forward(trans_x, small_trans_x)
-        else:
-            return self.supervised_forward(trans_x)
-
-    @staticmethod
-    def reconstruction_loss(x, x_recon, distribution='poisson'):
-        '''
-            VAE works the best with bernoulli loss
-            i-VAE works the best with poisson loss
-        '''
-        batch_size = x.size(0)  # [256 B, 163]
-        assert batch_size != 0
-
-        if distribution == 'bernoulli':  #
-            recon_loss = F.binary_cross_entropy_with_logits(x_recon, x, reduction='sum').div(batch_size)
-        elif distribution == 'weighted_bernoulli':
-            weight = torch.tensor([0.1, 0.9]).to("cuda")  # just a label here
-            weight_ = torch.ones(x.shape).to("cuda")
-            weight_[x <= 0.5] = weight[0]
-            weight_[x > 0.5] = weight[1]
-            recon_loss = F.binary_cross_entropy_with_logits(x_recon, x, reduction='none')
-            # print(recon_loss.shape) # torch.Size([256, 163])
-            recon_loss = torch.sum(weight_ * recon_loss).div(batch_size)
-
-        elif distribution == 'gaussian':
-            x_recon = F.sigmoid(x_recon)
-            recon_loss = F.mse_loss(x_recon, x, size_average=False).div(batch_size)
-        elif distribution == 'poisson':
-            # print((x - x_recon * torch.log(x)).shape)
-            # print(x_recon)
-            x_recon.clamp(min=1e-7, max=1e7)
-            recon_loss = torch.sum(x_recon - x * torch.log(x_recon)).div(batch_size)
-        else:
-            recon_loss = None
-
-        return recon_loss
-
-
 class Neural_ViT_Benchmark(nn.Module):
     """neuron amount depedent, mimic NDT arch"""
     def __init__(self, *,
@@ -609,35 +469,5 @@ class Neural_ViT_Benchmark(nn.Module):
 
         return recon_loss
 
-
-
-class Small_translate_trans(nn.Module):
-    def __init__(self, single_dim=16, depth=2, heads=4, mlp_expend=2, dropout=0.2):
-        super().__init__()
-        self.translate_token = nn.Parameter(torch.randn(1, 1, single_dim))
-        self.translate = Transformer(single_dim,
-                                     depth, heads, 32,
-                                     mlp_expend*single_dim, dropout,
-                                     offset=False, ff=False)
-
-    def forward(self, activity):
-        '''activity shape [b 1 dim], dim=16'''
-        b, _, dim = activity.shape
-
-        trans_token = repeat(self.translate_token, '() 1 ed -> b 1 ed', b=b).to(activity.device)  # [b n ed]
-        x = torch.cat([activity, trans_token], dim=-2)  # [b 2 dim]
-        x, _ = self.translate(x)
-
-        translated_x = x[:, -1, :]
-        return translated_x
-
-class Small_translate(nn.Module):
-    def __init__(self, single_dim=16, dropout=0.2):
-        super().__init__()
-        self.MLP = nn.Linear(single_dim, 1)
-
-    def forward(self, activity):
-        '''activity shape [b 1 dim], dim=16'''
-        return self.MLP(activity)
 
 

@@ -14,7 +14,17 @@ The models are defined in [synthetic_exp_twobody.py](https://github.com/nerdslab
 
 ##### Neural activity experiments
 
-
+The modified transformer basic operation sets are inside the *my_transformers* folder. 
+The datasets, models, and trainers are inside the *neural_kits* folder.
+The scripts are inside [main.py](https://github.com/nerdslab/EIT/blob/main/main.py), 
+where the flag **MAEorVIT** determines the experiment type. 
+This codebase provides:
+[x] Training EIT,
+[x] Training individual module of EIT,
+[x] Transfer pre-trained EIT across different animals,
+[x] Transfer pre-trained EIT across different targets,
+[x] Transfer pre-trained EIT across different timepoints,
+[x] Training a vanilla transformer supervisedly or self-supervisedly as the benchmark.
 
 
 ## Code contributors
