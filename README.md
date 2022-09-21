@@ -22,12 +22,12 @@ The scripts are inside [main.py](https://github.com/nerdslab/EIT/blob/main/main.
 where the flag *MAEorVIT* determines the experiment type. 
 This codebase provides:
 
-[x] Training EIT,
-[x] Training individual module of EIT,
-[x] Transfer pre-trained EIT across different animals,
-[x] Transfer pre-trained EIT across different targets,
-[x] Transfer pre-trained EIT across different timepoints,
-[x] Training a vanilla transformer supervisedly or self-supervisedly as the benchmark.
+1. Training EIT,
+2. Training individual module of EIT,
+3. Transfer pre-trained EIT across different animals,
+4. Transfer pre-trained EIT across different targets,
+5. Transfer pre-trained EIT across different timepoints,
+6. Training a vanilla transformer supervisedly or self-supervisedly as the benchmark.
 
 
 ## Code contributors
