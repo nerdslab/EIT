@@ -11,7 +11,6 @@ tf.io.gfile = tb.compat.tensorflow_stub.io.gfile
 
 from my_transformers.models import *
 from my_transformers.tasks import linear_clf
-from my_transformers.plots import plt_recon, plt_trans, plt_tiny
 from neural_kits.neural_tasks import angle_linear_clf, transfer_mlp, transfer_mlp_ssl, gen_linear_clf
 
 class vit_neural_learner(pl.LightningModule):

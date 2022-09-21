@@ -3,6 +3,20 @@ PyTorch implementation of "[Seeing the forest and the tree: Building
 representations of both individual and collective dynamics with transformers](https://arxiv.org/pdf/2206.06131.pdf)" (**NeurIPS 2022**).
 
 
+## Instructions
+
+##### Synthetic experiments
+
+Use [synthetic_data_threebody.py](https://github.com/nerdslab/EIT/blob/main/synthetic_data_threebody.py) or 
+[synthetic_data_twobody.py](https://github.com/nerdslab/EIT/blob/main/synthetic_data_twobody.py)
+to generate synthetic data, and then use the corresponding synthetic_exp_EXP.py to run experiments.
+The models are defined in [synthetic_exp_twobody.py](https://github.com/nerdslab/EIT/blob/main/synthetic_exp_twobody.py).
+
+##### Neural activity experiments
+
+
+
+
 ## Code contributors
 
 - Ran Liu (Maintainer), github: ranliu98

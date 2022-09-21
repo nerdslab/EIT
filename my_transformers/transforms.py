@@ -1,4 +1,4 @@
-"""transformation operations for images in pairs"""
+"""transformation: operations for images in pairs and not in pairs"""
 
 import torch
 from torchvision.transforms import RandomCrop, RandomHorizontalFlip, Resize
