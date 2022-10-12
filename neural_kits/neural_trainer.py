@@ -146,9 +146,9 @@ class ndt_ssl_neural_learner(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         x, label = batch
 
-        if x.shape[1] == 2:
-            if torch.rand(1) < 0.5:
-                x[:, 1, :] = x[:, 0, :] + torch.rand(x[:, 0, :].shape, device=x.device) - 0.5
+        #if x.shape[1] == 2:
+        #    if torch.rand(1) < 0.5:
+        #        x[:, 1, :] = x[:, 0, :] + torch.rand(x[:, 0, :].shape, device=x.device) - 0.5
 
         preds, _ = self.forward(x)
         loss = preds
@@ -258,38 +258,6 @@ class vit_neural_learner_dirc(pl.LightningModule):
 
     def on_epoch_end(self):
         self.net.eval()
-
-        '''
-        if (self.current_epoch + 1) % 5 == 0:
-            running_eval_loss = 0.0
-            with torch.no_grad():
-                right, total = [], []
-                for x, label in self.add['test_loader']:
-                    # print(x.shape, label.shape)
-                    # torch.Size([16, 2, 163]) torch.Size([16, 2])
-
-                    x, label = x.cuda(), label.cuda()
-                    preds, _ = self.net(x)
-                    if self.reshape_label:
-                        label = rearrange(label, 'b t -> (b t)')
-
-                    if type(preds) == type({'S': x}):
-                        alpha = 0.5
-                        # print(preds['S'].shape, preds['T'].shape)
-                        loss = self.crit(preds['S'], label) + alpha * self.crit(preds['T'], label)
-                    else:
-                        loss = self.crit(preds, label)
-                    # loss = self.crit(preds, label)
-                    running_eval_loss += loss
-
-                    _, pred_class = torch.max(preds, 1)
-                    right.append((pred_class == label).sum().item())
-                    total.append(label.size(0))
-            self.logger.log_metrics({'Loss/eval_loss': running_eval_loss}, step=self.current_epoch)
-            self.logger.log_metrics({'Acc/eval_clf': sum(right) / sum(total)}, step=self.current_epoch)
-            
-        '''
-
 
         # do eval loss evaluation
         # don't do it within validation_step bc it will block clf later.

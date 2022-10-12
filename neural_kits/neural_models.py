@@ -41,17 +41,6 @@ class Neural_ViT_T(nn.Module):
             nn.Linear(neuron*self.bottelneck_dim, num_classes), # for some reason above is synthetic, this is real
         )
 
-    def bottom_head_within_cls(self):
-        self.bottom_chewie1 = nn.Sequential(nn.Linear(neuron_amount['chewie1'] * self.bottelneck_dim, self.num_classes))
-        self.bottom_chewie2 = nn.Sequential(nn.Linear(neuron_amount['chewie2'] * self.bottelneck_dim, self.num_classes))
-        self.bottom_mihi1 = nn.Sequential(nn.Linear(neuron_amount['mihi1'] * self.bottelneck_dim, self.num_classes))
-        self.bottom_mihi2 = nn.Sequential(nn.Linear(neuron_amount['mihi2'] * self.bottelneck_dim, self.num_classes))
-
-        self.bottom_lookup = {'chewie1': self.bottom_chewie1,
-                              'chewie2': self.bottom_chewie2,
-                              'mihi1': self.bottom_mihi1,
-                              'mihi2': self.bottom_mihi2,}
-
     def get_latent_t(self, img):
         b, t, n = img.shape
 
@@ -92,27 +81,18 @@ class Neural_ViT_T(nn.Module):
         return rearrange(trans_x, 'b n t d -> (b t) n d')
 
     def forward(self, img, head=None, test=False):
+        trans_x, small_trans_x = self.get_latent_t(img)
+        x = rearrange(small_trans_x, 'b n t d -> b t (n d)')
+
         if test is False:
             if head is None:
                 # use the pre-defined bottom with 160 neurons
-                trans_x, small_trans_x = self.get_latent_t(img)
-                x = rearrange(small_trans_x, 'b n t d -> b t (n d)')
                 return rearrange(self.mlp_head_bottom(x), 'b t cls -> (b t) cls'), x
-            elif type(head) is type('mihi1'):
-                # use the self-stored bottom for different animals
-                trans_x, small_trans_x = self.get_latent_t(img)
-                x = rearrange(small_trans_x, 'b n t d -> b t (n d)')
-                bottom = self.bottom_lookup[head]
-                return rearrange(bottom(x), 'b t cls -> (b t) cls'), x
             else:
                 # use the given bottom
-                trans_x, small_trans_x = self.get_latent_t(img)
-                x = rearrange(small_trans_x, 'b n t d -> b t (n d)')
                 return rearrange(head(x), 'b t cls -> (b t) cls'), x
 
         else:
-            trans_x, small_trans_x = self.get_latent_t(img)
-            x = rearrange(small_trans_x, 'b n t d -> b t (n d)')
             small_trans_x = rearrange(self.mlp_head_bottom(x), 'b t cls -> (b t) cls')
             return trans_x, small_trans_x
 
@@ -142,15 +122,16 @@ class Neural_ViT_S(nn.Module):
         self.MT = MT
         self.bottelneck_dim = 1
         self.ssl = ssl
+
         if ssl is True:
             print("S_transformer is in SSL mode")
-            self.decoder_pos_emb = nn.Parameter(torch.randn(single_dim))
+            raise NotImplementedError
 
         assert pool in {'cls', 'mean'}, 'pool type must be either cls (cls token) or mean (mean pooling)'
         # assert time * single_dim == embed_dim, 'embed dim different from time*neuron-dim not implemented'
 
         '''three possible types: cls, cat, or time (else)
-        mainly cls and cat are used'''
+        only cls and cat are used'''
         self.type = type
 
         if self.type == 'cat':
@@ -182,17 +163,7 @@ class Neural_ViT_S(nn.Module):
             )
 
         else:
-            # In the benchmark model, pos embedding works the same as the neuron embedding
-            self.neuron_embed = nn.Parameter(torch.randn(1, neuron, embed_dim))  # based on total amount of neuron
-            self.cls_token = nn.Parameter(torch.randn(1, 1, embed_dim))
-            self.dropout = nn.Dropout(emb_dropout)
-            self.S_transformer = Transformer(embed_dim, depth, heads, dim_head, mlp_expend * embed_dim, dropout)
-
-            self.pool = pool
-            self.mlp_head = nn.Sequential(
-                nn.LayerNorm((163+1)*2),
-                nn.Linear((163+1)*2, num_classes)
-            )
+            raise NotImplementedError
 
     def supervised_forward(self, img):
         b, t, n = img.shape
@@ -226,56 +197,9 @@ class Neural_ViT_S(nn.Module):
             x = self.mlp_head(x)
 
         else:
-            trans_x = rearrange(small_trans_x, 'b n t d -> b n (t d)')
-            # embed with neuron id and feed it into spatial transformer
-            embed_x = repeat(self.neuron_embed, '() n ed -> b n ed', b=b)  # [b n ed]
-            cls_token = repeat(self.cls_token, '() 1 d -> b 1 d', b=b)
-
-            x = trans_x + embed_x
-            x = torch.cat([cls_token, x], dim=-2)  # [b n+1 ed+td]
-            x = self.dropout(x)
-            x, weights = self.S_transformer(x)  # [b n+1 ed+td]
-
-            # x = x.mean(dim=1) if self.pool == 'mean' else x[:, 0]
-            x = rearrange(x, 'b n (t d) -> b t (n d)', t=t)
-            x = self.mlp_head(x)
-            x = rearrange(x, 'b t cls -> (b t) cls')
-
-        # small_trans_x = rearrange(small_trans_x, 'b n t d -> (b t) (n d)')
+            raise NotImplementedError
 
         return {'S': x, 'T': small_trans_x}, {"weights": weights}
-
-    def ssl_forward(self, img):
-        trans_x, small_trans_x = self.MT.get_latent_t(img)  # trans_x shape [b n t d]
-        trans_x = rearrange(trans_x, 'b n t d -> (b t) n d')
-
-        bt, n, d = trans_x.shape
-        device = trans_x.device
-
-        # create masked_x and unmasked_x
-        num_masked = int(self.masking_ratio * n)
-        rand_indices = torch.rand(bt, n, device=device).argsort(dim=-1)
-        masked_indices, unmasked_indices = rand_indices[:, :num_masked], rand_indices[:, num_masked:]
-
-        batch_range = torch.arange(bt, device=device)[:, None]
-        unmasked_x = trans_x[batch_range, unmasked_indices]
-        masked_x = trans_x[batch_range, masked_indices]
-
-        # add unmask_x and masked_tokens with embeddings
-        embed_x = repeat(self.neuron_embed, '() n ed -> b n ed', b=bt)
-        unmasked_embed_x = embed_x[batch_range, unmasked_indices]
-        masked_embed_x = embed_x[batch_range, masked_indices]
-
-        masked_tokens = repeat(self.mask_token, 'd -> b n d', b=bt, n=num_masked)
-        masked_tokens = masked_tokens + masked_embed_x
-        unmasked_x = unmasked_x + unmasked_embed_x
-
-        tokens = torch.cat((masked_tokens, unmasked_x), dim=1)
-        x, weights = self.S_transformer(tokens)
-
-        pred_masked_values = x[:, :num_masked]
-        recon_loss = F.mse_loss(pred_masked_values, masked_x)
-        return recon_loss
 
     def latents(self, img):
 
@@ -312,14 +236,11 @@ class Neural_ViT_S(nn.Module):
         return x  # b n d
 
     def forward(self, img):
-        if self.ssl == True:
-            return self.ssl_forward(img)
-        else:
-            return self.supervised_forward(img)
+        return self.supervised_forward(img)
 
 
 class Neural_ViT_Benchmark(nn.Module):
-    """neuron amount depedent, mimic NDT arch"""
+    """neuron amount dependent, mimic NDT arch"""
     def __init__(self, *,
                  num_classes,  # amount of final classification cls
                  depth,  # vit depth
@@ -339,9 +260,8 @@ class Neural_ViT_Benchmark(nn.Module):
         self.num_classes = num_classes
 
         self.ssl = ssl
-
         mood = 'no'
-
+        # TODO: hardcoded here
         if mood != 'test':
             # neuron --> dim
             self.NDT_linear = nn.Linear(neuron, 2*neuron)
@@ -468,6 +388,4 @@ class Neural_ViT_Benchmark(nn.Module):
             recon_loss = None
 
         return recon_loss
-
-
 
