@@ -29,7 +29,7 @@ This codebase provides:
 5. Transfer pre-trained EIT across different timepoints,
 6. Training a vanilla transformer supervisedly or self-supervisedly as the benchmark.
 
-*Where to find the training datasets*: For the Mihi-Chewie datasets, you can find one version of it at [here](https://github.com/nerdslab/myow), or you could find it [here](https://datadryad.org/stash/dataset/doi:10.5061/dryad.xd2547dkt) with a different format. For the Jenkins’ Maze datasets, you can checkout [this](https://neurallatents.github.io/).
+*Where to find the training datasets*: For the Mihi-Chewie datasets, you can checkout [this](https://github.com/nerdslab/myow-neuro). For the Jenkins’ Maze datasets, you can checkout [this](https://neurallatents.github.io/).
 
 
 ## Code contributors
@@ -54,7 +54,7 @@ If you find the code useful for your research, please consider citing our work:
 }
 ```
 
-AND [SwapVAE](https://github.com/nerdslab/SwapVAE)
+AND [Swap-VAE](https://github.com/nerdslab/SwapVAE)
 
 ```
 @article{liu2021drop,
